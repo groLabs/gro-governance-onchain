@@ -177,4 +177,38 @@ contract GovernorOpsTest is BaseFixture {
         vm.expectRevert("Governor: proposal not successful");
         governor.queue(targets, values, calldatas, keccak256(bytes("test")));
     }
+
+    function testCannotQueueProposalAfterCancel() public {
+        vm.startPrank(based);
+        address[] memory targets = new address[](1);
+        targets[0] = address(0);
+        uint256[] memory values = new uint256[](1);
+        values[0] = 0;
+
+        bytes[] memory calldatas = new bytes[](1);
+        calldatas[0] = abi.encodeWithSignature("test()");
+
+        // Give some voting power to proposer
+        aggregator.setBalance(based, governor.PROPOSAL_THRESHOLD());
+
+        uint256 proposalId = governor.propose(
+            targets,
+            values,
+            calldatas,
+            "test"
+        );
+
+        // Cancel proposal
+        governor.cancel(targets, values, calldatas, keccak256(bytes("test")));
+        vm.stopPrank();
+        // Make sure proposal is canceled now
+        assertEq(
+            uint256(governor.state(proposalId)),
+            uint256(IGovernor.ProposalState.Canceled)
+        );
+        utils.mineBlocks(10);
+        // Make sure it reverts when trying to queue
+        vm.expectRevert("Governor: proposal not successful");
+        governor.queue(targets, values, calldatas, keccak256(bytes("test")));
+    }
 }

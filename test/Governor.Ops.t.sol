@@ -5,7 +5,7 @@ import "forge-std/Test.sol";
 import "../src/Governor.sol";
 import "./BaseFixture.sol";
 
-contract GovernorBaseTest is BaseFixture {
+contract GovernorOpsTest is BaseFixture {
     function setUp() public override {
         super.setUp();
     }

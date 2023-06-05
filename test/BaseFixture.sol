@@ -5,6 +5,7 @@ import "forge-std/Vm.sol";
 import "./Utils.sol";
 import "../src/Governor.sol";
 import "../src/Mocks/MockVoteAggregator.sol";
+import "../lib/openzeppelin-contracts/contracts/governance/TimelockController.sol";
 
 contract BaseFixture is Test {
     Utils internal utils;
@@ -17,6 +18,7 @@ contract BaseFixture is Test {
 
     GroGovernor public governor;
     MockVoteAggregator public aggregator;
+    TimelockController public timelock;
 
     function setUp() public virtual {
         utils = new Utils();
@@ -29,9 +31,13 @@ contract BaseFixture is Test {
         vm.label(bob, "Bob");
         joe = users[3];
         vm.label(joe, "Joe");
+        // Deploy timelock controller:
+        address[] memory proposers = new address[](1);
+        proposers[0] = based;
+        timelock = new TimelockController(1, proposers, proposers, based);
         // Mock aggregator
         aggregator = new MockVoteAggregator();
         // Create governor
-        governor = new GroGovernor(address(aggregator));
+        governor = new GroGovernor(address(aggregator), timelock);
     }
 }

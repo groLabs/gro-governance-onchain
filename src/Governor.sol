@@ -3,15 +3,24 @@ pragma solidity ^0.8.13;
 
 import "../lib/openzeppelin-contracts/contracts/governance/Governor.sol";
 import "../lib/openzeppelin-contracts/contracts/governance/extensions/GovernorCountingSimple.sol";
+import "../lib/openzeppelin-contracts/contracts/governance/extensions/GovernorTimelockControl.sol";
 import "./Interfaces/IAggregator.sol";
 
-contract GroGovernor is Governor, GovernorCountingSimple {
+// Use TimeLock to delay execution of proposals
+contract GroGovernor is
+    Governor,
+    GovernorCountingSimple,
+    GovernorTimelockControl
+{
     uint256 public constant QUORUM = 1000;
     uint256 public constant PROPOSAL_THRESHOLD = 1000e18;
 
     IAggregator public immutable aggregator;
 
-    constructor(address _aggregator) Governor("GRO Governor") {
+    constructor(
+        address _aggregator,
+        TimelockController _timelock
+    ) Governor("GRO Governor") GovernorTimelockControl(_timelock) {
         aggregator = IAggregator(_aggregator);
     }
 
@@ -48,6 +57,12 @@ contract GroGovernor is Governor, GovernorCountingSimple {
         return QUORUM;
     }
 
+    function supportsInterface(
+        bytes4 interfaceId
+    ) public view override(Governor, GovernorTimelockControl) returns (bool) {
+        return super.supportsInterface(interfaceId);
+    }
+
     /// @notice Get the votes an account has for a proposal
     /// @param account The address to get votes for
     function _getVotes(
@@ -56,5 +71,53 @@ contract GroGovernor is Governor, GovernorCountingSimple {
         bytes memory /* params */
     ) internal view override returns (uint256) {
         return aggregator.balanceOf(account);
+    }
+
+    function state(
+        uint256 proposalId
+    )
+        public
+        view
+        override(Governor, GovernorTimelockControl)
+        returns (ProposalState)
+    {
+        return super.state(proposalId);
+    }
+
+    function cancel(
+        address[] memory targets,
+        uint256[] memory values,
+        bytes[] memory calldatas,
+        bytes32 descriptionHash
+    ) public override(Governor, IGovernor) returns (uint256) {
+        return super.cancel(targets, values, calldatas, descriptionHash);
+    }
+
+    function _cancel(
+        address[] memory targets,
+        uint256[] memory values,
+        bytes[] memory calldatas,
+        bytes32 descriptionHash
+    ) internal override(Governor, GovernorTimelockControl) returns (uint256) {
+        return super._cancel(targets, values, calldatas, descriptionHash);
+    }
+
+    function _execute(
+        uint256 proposalId,
+        address[] memory targets,
+        uint256[] memory values,
+        bytes[] memory calldatas,
+        bytes32 descriptionHash
+    ) internal override(Governor, GovernorTimelockControl) {
+        super._execute(proposalId, targets, values, calldatas, descriptionHash);
+    }
+
+    function _executor()
+        internal
+        view
+        override(Governor, GovernorTimelockControl)
+        returns (address)
+    {
+        return super._executor();
     }
 }

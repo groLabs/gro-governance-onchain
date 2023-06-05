@@ -211,4 +211,37 @@ contract GovernorOpsTest is BaseFixture {
         vm.expectRevert("Governor: proposal not successful");
         governor.queue(targets, values, calldatas, keccak256(bytes("test")));
     }
+
+    function testCannotExecuteBeforeQueue() public {
+        vm.startPrank(based);
+        address[] memory targets = new address[](1);
+        targets[0] = address(0);
+        uint256[] memory values = new uint256[](1);
+        values[0] = 0;
+
+        bytes[] memory calldatas = new bytes[](1);
+        calldatas[0] = abi.encodeWithSignature("test()");
+
+        // Give some voting power to proposer
+        aggregator.setBalance(based, governor.PROPOSAL_THRESHOLD());
+
+        uint256 proposalId = governor.propose(
+            targets,
+            values,
+            calldatas,
+            "test"
+        );
+        vm.stopPrank();
+        utils.mineBlocks(100);
+        // Alice votes for proposal:
+        aggregator.setBalance(alice, governor.PROPOSAL_THRESHOLD());
+        vm.prank(alice);
+        governor.castVote(proposalId, 1);
+
+        utils.mineBlocks(governor.votingPeriod() + 1);
+
+        // Try to execute proposal before it is queued
+        vm.expectRevert("TimelockController: operation is not ready");
+        governor.execute(targets, values, calldatas, keccak256(bytes("test")));
+    }
 }

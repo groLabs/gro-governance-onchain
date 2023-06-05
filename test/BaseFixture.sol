@@ -3,7 +3,7 @@ pragma solidity ^0.8.13;
 import "forge-std/Test.sol";
 import "forge-std/Vm.sol";
 import "./Utils.sol";
-import "../src/Governor.sol";
+import "../src/GroGovernor.sol";
 import "../src/Mocks/MockVoteAggregator.sol";
 import "../lib/openzeppelin-contracts/contracts/governance/TimelockController.sol";
 
@@ -39,6 +39,12 @@ contract BaseFixture is Test {
         aggregator = new MockVoteAggregator();
         // Create governor
         governor = new GroGovernor(address(aggregator), timelock);
+
+        // Grant proposer and executoooor role to governor
+        vm.startPrank(based);
+        timelock.grantRole(timelock.PROPOSER_ROLE(), address(governor));
+        timelock.grantRole(timelock.EXECUTOR_ROLE(), address(governor));
+        vm.stopPrank();
     }
 
     /// @notice Spin up a test proposal with basic signature

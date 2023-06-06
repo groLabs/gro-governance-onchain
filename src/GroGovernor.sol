@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.13;
 
+import "../lib/openzeppelin-contracts/contracts/access/AccessControl.sol";
 import "../lib/openzeppelin-contracts/contracts/governance/Governor.sol";
 import "../lib/openzeppelin-contracts/contracts/governance/extensions/GovernorCountingSimple.sol";
 import "../lib/openzeppelin-contracts/contracts/governance/extensions/GovernorTimelockControl.sol";
@@ -10,23 +11,46 @@ import "./Interfaces/IAggregator.sol";
 contract GroGovernor is
     Governor,
     GovernorCountingSimple,
-    GovernorTimelockControl
+    GovernorTimelockControl,
+    AccessControl
 {
+    ///////// Constants /////////
+    bytes32 public constant GOVERNOR_ADMIN_ROLE =
+        keccak256("GOVERNOR_ADMIN_ROLE");
     uint256 public constant QUORUM = 1000;
     uint256 public constant PROPOSAL_THRESHOLD = 1000e18;
 
     IAggregator public immutable aggregator;
+
+    ///////// Storage /////////
+    uint256 public voteDelay = 2 days;
+
+    ///////// Events /////////
+    event VoteDelaySet(uint256 newVoteDelay, uint256 oldVoteDelay);
 
     constructor(
         address _aggregator,
         TimelockController _timelock
     ) Governor("GRO Governor") GovernorTimelockControl(_timelock) {
         aggregator = IAggregator(_aggregator);
+        // Allow TimelockController to change parameters
+        _setRoleAdmin(GOVERNOR_ADMIN_ROLE, GOVERNOR_ADMIN_ROLE);
+        _setupRole(GOVERNOR_ADMIN_ROLE, address(_timelock));
     }
 
-    /// @notice Voting delay of 2 days as we want to proposal to be visible for 2 days before voting starts
-    function votingDelay() public pure override returns (uint256) {
-        return 2 days;
+    /// @notice Returns the delay between when a proposal is created and when voting can start
+    function votingDelay() public view override returns (uint256) {
+        return voteDelay;
+    }
+
+    /// @notice Set the delay between when a proposal is created and when voting can start
+    /// @param _voteDelay The new delay
+    function setVotingDelay(
+        uint256 _voteDelay
+    ) public onlyRole(GOVERNOR_ADMIN_ROLE) {
+        uint256 oldVoteDelay = voteDelay;
+        voteDelay = _voteDelay;
+        emit VoteDelaySet(_voteDelay, oldVoteDelay);
     }
 
     /// @notice Each proposal is open for voting for 5 days
@@ -57,7 +81,12 @@ contract GroGovernor is
 
     function supportsInterface(
         bytes4 interfaceId
-    ) public view override(Governor, GovernorTimelockControl) returns (bool) {
+    )
+        public
+        view
+        override(Governor, GovernorTimelockControl, AccessControl)
+        returns (bool)
+    {
         return super.supportsInterface(interfaceId);
     }
 

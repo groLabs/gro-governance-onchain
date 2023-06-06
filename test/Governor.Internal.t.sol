@@ -50,6 +50,16 @@ contract GovernorInternalSettingTest is BaseFixture {
         assertEq(abstainVotes, 0);
     }
 
+    function testRevertOnSettingConfigNotInACL() public {
+        vm.prank(alice);
+        vm.expectRevert();
+        governor.setVotingDelay(3 days);
+
+        vm.prank(based);
+        vm.expectRevert();
+        governor.setVotingDelay(3 days);
+    }
+
     function testVoteForSettingVotingDelay() public {
         // Make sure voting delay is 2 days
         assertEq(governor.votingDelay(), 2 days);

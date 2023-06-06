@@ -1,0 +1,4 @@
+ignore:
+  - "lib"
+  - "test"
+  - "src/mocks"

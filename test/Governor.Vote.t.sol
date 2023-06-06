@@ -10,7 +10,7 @@ contract GovernorVoteTest is BaseFixture {
     function setUp() public override {
         super.setUp();
         proposalId = spinUpTestProposal();
-        utils.mineBlocks(1000);
+        vm.warp(block.timestamp + governor.votingDelay() + 1);
     }
 
     function testVoteSimple() public {

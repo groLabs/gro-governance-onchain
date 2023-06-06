@@ -24,14 +24,14 @@ contract GroGovernor is
         aggregator = IAggregator(_aggregator);
     }
 
-    /// @notice No voting delay as we are almost using current vested voting power
+    /// @notice Voting delay of 2 days as we want to proposal to be visible for 2 days before voting starts
     function votingDelay() public pure override returns (uint256) {
-        // TODO: Double check this
-        return 0;
+        return 2 days;
     }
 
+    /// @notice Each proposal is open for voting for 5 days
     function votingPeriod() public pure override returns (uint256) {
-        return 50400; // 1 week
+        return 5 days;
     }
 
     /// TODO: Double-check
@@ -40,14 +40,12 @@ contract GroGovernor is
         return PROPOSAL_THRESHOLD;
     }
 
-    /// TODO: Double-check
     function CLOCK_MODE() public pure override returns (string memory) {
-        return "mode=blocknumber&from=default";
+        return "mode=timestamp";
     }
 
-    /// TODO: Double-check
     function clock() public view override returns (uint48) {
-        return SafeCast.toUint48(block.number);
+        return uint48(block.timestamp);
     }
 
     /// TODO: Decide on implementation of quorum

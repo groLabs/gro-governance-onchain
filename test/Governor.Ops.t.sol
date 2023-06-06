@@ -125,7 +125,7 @@ contract GovernorOpsTest is BaseFixture {
             "test"
         );
         vm.stopPrank();
-        utils.mineBlocks(10);
+        vm.warp(block.timestamp + governor.votingDelay() + 1);
         // Make sure proposal is active now after some blocks
         assertEq(
             uint256(governor.state(proposalId)),
@@ -136,7 +136,7 @@ contract GovernorOpsTest is BaseFixture {
         vm.prank(alice);
         governor.castVote(proposalId, 1);
         // Mine some blocks to pass voting period
-        utils.mineBlocks(governor.votingPeriod() + 1);
+        vm.warp(block.timestamp + governor.votingPeriod() + 1);
         // Queue proposal
         vm.prank(based);
         governor.queue(targets, values, calldatas, keccak256(bytes("test")));
@@ -147,7 +147,7 @@ contract GovernorOpsTest is BaseFixture {
         );
 
         // Mine blocks to pass timelock
-        vm.warp(100);
+        vm.warp(block.timestamp + 100);
         // Execute proposal
         vm.prank(based);
         governor.execute(targets, values, calldatas, keccak256(bytes("test")));
@@ -206,7 +206,7 @@ contract GovernorOpsTest is BaseFixture {
             uint256(governor.state(proposalId)),
             uint256(IGovernor.ProposalState.Canceled)
         );
-        utils.mineBlocks(10);
+        vm.warp(block.timestamp + governor.votingPeriod() + 1);
         // Make sure it reverts when trying to queue
         vm.expectRevert("Governor: proposal not successful");
         governor.queue(targets, values, calldatas, keccak256(bytes("test")));
@@ -232,13 +232,13 @@ contract GovernorOpsTest is BaseFixture {
             "test"
         );
         vm.stopPrank();
-        utils.mineBlocks(100);
+        vm.warp(block.timestamp + governor.votingDelay() + 1);
         // Alice votes for proposal:
         aggregator.setBalance(alice, governor.PROPOSAL_THRESHOLD());
         vm.prank(alice);
         governor.castVote(proposalId, 1);
 
-        utils.mineBlocks(governor.votingPeriod() + 1);
+        vm.warp(block.timestamp + governor.votingPeriod() + 1);
 
         // Try to execute proposal before it is queued
         vm.expectRevert("TimelockController: operation is not ready");

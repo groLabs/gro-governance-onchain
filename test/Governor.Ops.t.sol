@@ -23,7 +23,7 @@ contract GovernorOpsTest is BaseFixture {
         calldatas[0] = abi.encodeWithSignature("test()");
 
         // Give some voting power to proposer
-        aggregator.setBalance(based, governor.PROPOSAL_THRESHOLD());
+        aggregator.setBalance(based, governor.proposalThreshold());
 
         uint256 proposalId = governor.propose(
             targets,
@@ -53,7 +53,7 @@ contract GovernorOpsTest is BaseFixture {
         calldatas[0] = abi.encodeWithSignature("test()");
 
         // Give some voting power to proposer
-        aggregator.setBalance(based, governor.PROPOSAL_THRESHOLD());
+        aggregator.setBalance(based, governor.proposalThreshold());
 
         uint256 proposalId = governor.propose(
             targets,
@@ -116,7 +116,7 @@ contract GovernorOpsTest is BaseFixture {
         calldatas[0] = abi.encodeWithSignature("test()");
 
         // Give some voting power to proposer
-        aggregator.setBalance(based, governor.PROPOSAL_THRESHOLD());
+        aggregator.setBalance(based, governor.proposalThreshold());
 
         uint256 proposalId = governor.propose(
             targets,
@@ -132,7 +132,7 @@ contract GovernorOpsTest is BaseFixture {
             uint256(IGovernor.ProposalState.Active)
         );
         // Alice votes for proposal:
-        aggregator.setBalance(alice, governor.PROPOSAL_THRESHOLD());
+        aggregator.setBalance(alice, governor.proposalThreshold());
         vm.prank(alice);
         governor.castVote(proposalId, 1);
         // Mine some blocks to pass voting period
@@ -169,7 +169,7 @@ contract GovernorOpsTest is BaseFixture {
         calldatas[0] = abi.encodeWithSignature("test()");
 
         // Give some voting power to proposer
-        aggregator.setBalance(based, governor.PROPOSAL_THRESHOLD());
+        aggregator.setBalance(based, governor.proposalThreshold());
 
         governor.propose(targets, values, calldatas, "test");
         vm.stopPrank();
@@ -189,7 +189,7 @@ contract GovernorOpsTest is BaseFixture {
         calldatas[0] = abi.encodeWithSignature("test()");
 
         // Give some voting power to proposer
-        aggregator.setBalance(based, governor.PROPOSAL_THRESHOLD());
+        aggregator.setBalance(based, governor.proposalThreshold());
 
         uint256 proposalId = governor.propose(
             targets,
@@ -223,7 +223,7 @@ contract GovernorOpsTest is BaseFixture {
         calldatas[0] = abi.encodeWithSignature("test()");
 
         // Give some voting power to proposer
-        aggregator.setBalance(based, governor.PROPOSAL_THRESHOLD());
+        aggregator.setBalance(based, governor.proposalThreshold());
 
         uint256 proposalId = governor.propose(
             targets,
@@ -234,7 +234,7 @@ contract GovernorOpsTest is BaseFixture {
         vm.stopPrank();
         vm.warp(block.timestamp + governor.votingDelay() + 1);
         // Alice votes for proposal:
-        aggregator.setBalance(alice, governor.PROPOSAL_THRESHOLD());
+        aggregator.setBalance(alice, governor.proposalThreshold());
         vm.prank(alice);
         governor.castVote(proposalId, 1);
 

@@ -22,7 +22,7 @@ contract GovernorInternalSettingTest is BaseFixture {
         calldatas[0] = abi.encodeWithSignature("test()");
 
         // Give some voting power to proposer
-        aggregator.setBalance(based, governor.PROPOSAL_THRESHOLD());
+        aggregator.setBalance(based, governor.proposalThreshold());
 
         uint256 proposalId = governor.propose(
             targets,
@@ -33,7 +33,7 @@ contract GovernorInternalSettingTest is BaseFixture {
         vm.stopPrank();
         vm.warp(block.timestamp + governor.votingDelay() + 1);
         // Give some voting power to voter
-        aggregator.setBalance(alice, governor.PROPOSAL_THRESHOLD());
+        aggregator.setBalance(alice, governor.proposalThreshold());
         vm.prank(alice);
         // Vote
         governor.castVote(proposalId, 1);
@@ -46,7 +46,7 @@ contract GovernorInternalSettingTest is BaseFixture {
             uint256 abstainVotes
         ) = governor.proposalVotes(proposalId);
         assertEq(againstVotes, 0);
-        assertEq(forVotes, governor.PROPOSAL_THRESHOLD());
+        assertEq(forVotes, governor.proposalThreshold());
         assertEq(abstainVotes, 0);
     }
 
@@ -76,7 +76,7 @@ contract GovernorInternalSettingTest is BaseFixture {
         );
 
         // Give some voting power to proposer
-        aggregator.setBalance(based, governor.PROPOSAL_THRESHOLD());
+        aggregator.setBalance(based, governor.proposalThreshold());
 
         uint256 proposalId = governor.propose(
             targets,
@@ -87,7 +87,7 @@ contract GovernorInternalSettingTest is BaseFixture {
         vm.stopPrank();
         vm.warp(block.timestamp + governor.votingDelay() + 1);
         // Give some voting power to voter
-        aggregator.setBalance(alice, governor.PROPOSAL_THRESHOLD());
+        aggregator.setBalance(alice, governor.proposalThreshold());
         vm.prank(alice);
         // Vote
         governor.castVote(proposalId, 1);

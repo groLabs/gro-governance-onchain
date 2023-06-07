@@ -17,16 +17,23 @@ contract GroGovernor is
     ///////// Constants /////////
     bytes32 public constant GOVERNOR_ADMIN_ROLE =
         keccak256("GOVERNOR_ADMIN_ROLE");
-    uint256 public constant QUORUM = 1000;
-    uint256 public constant PROPOSAL_THRESHOLD = 1000e18;
-
-    IAggregator public immutable aggregator;
 
     ///////// Storage /////////
+    uint256 public votePeriod = 2 days;
     uint256 public voteDelay = 2 days;
+    uint256 public threshold = 1000e18;
+    IAggregator public aggregator;
+    uint256 public quorumVotes = 1000;
 
     ///////// Events /////////
     event VoteDelaySet(uint256 newVoteDelay, uint256 oldVoteDelay);
+    event AggregatorSet(address newAggregator, address oldAggregator);
+    event ProposalThresholdSet(
+        uint256 newProposalThreshold,
+        uint256 oldProposalThreshold
+    );
+    event QuorumSet(uint256 newQuorum, uint256 oldQuorum);
+    event VotePeriodSet(uint256 newVotePeriod, uint256 oldVotePeriod);
 
     constructor(
         address _aggregator,
@@ -53,15 +60,52 @@ contract GroGovernor is
         emit VoteDelaySet(_voteDelay, oldVoteDelay);
     }
 
-    /// @notice Each proposal is open for voting for 5 days
-    function votingPeriod() public pure override returns (uint256) {
-        return 5 days;
+    /// @notice Set address of aggregator contract
+    /// @param _aggregator The new aggregator
+    function setAggregator(
+        address _aggregator
+    ) public onlyRole(GOVERNOR_ADMIN_ROLE) {
+        address oldAggregator = address(aggregator);
+        aggregator = IAggregator(_aggregator);
+        emit AggregatorSet(_aggregator, oldAggregator);
     }
 
-    /// TODO: Double-check
+    /// @notice Set quorum for proposals
+    /// @param _quorum The new quorum
+    function setQuorum(uint256 _quorum) public onlyRole(GOVERNOR_ADMIN_ROLE) {
+        uint256 oldQuorum = quorumVotes;
+        quorumVotes = _quorum;
+        emit QuorumSet(_quorum, oldQuorum);
+    }
+
+    /// @notice Each proposal is open for voting for 5 days
+    function votingPeriod() public view override returns (uint256) {
+        return votePeriod;
+    }
+
+    /// @notice Set voting period for proposals
+    /// @param _votePeriod The new voting period
+    function setVotingPeriod(
+        uint256 _votePeriod
+    ) public onlyRole(GOVERNOR_ADMIN_ROLE) {
+        uint256 oldVotePeriod = votePeriod;
+        votePeriod = _votePeriod;
+        emit VotePeriodSet(_votePeriod, oldVotePeriod);
+    }
+
     /// @notice Min amount of voting power needed to create a proposal
-    function proposalThreshold() public pure override returns (uint256) {
-        return PROPOSAL_THRESHOLD;
+    function proposalThreshold() public view override returns (uint256) {
+        return threshold;
+    }
+
+    /// @notice Set min amount of voting power needed to create a proposal
+    /// @param _proposalThreshold The new proposal threshold
+    function setProposalThreshold(
+        uint256 _proposalThreshold
+    ) public onlyRole(GOVERNOR_ADMIN_ROLE) {
+        uint256 oldProposalThreshold = threshold;
+        threshold = _proposalThreshold;
+        emit ProposalThresholdSet(_proposalThreshold, oldProposalThreshold);
     }
 
     function CLOCK_MODE() public pure override returns (string memory) {
@@ -72,11 +116,10 @@ contract GroGovernor is
         return uint48(block.timestamp);
     }
 
-    /// TODO: Decide on implementation of quorum
     function quorum(
         uint256 /* timepoint */
     ) public view virtual override returns (uint256) {
-        return QUORUM;
+        return quorumVotes;
     }
 
     function supportsInterface(

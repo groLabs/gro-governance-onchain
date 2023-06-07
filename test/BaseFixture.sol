@@ -46,22 +46,4 @@ contract BaseFixture is Test {
         timelock.grantRole(timelock.EXECUTOR_ROLE(), address(governor));
         vm.stopPrank();
     }
-
-    /// @notice Spin up a test proposal with basic signature
-    function spinUpTestProposal() public returns (uint256 proposalId) {
-        vm.startPrank(based);
-        address[] memory targets = new address[](1);
-        targets[0] = address(0);
-        uint256[] memory values = new uint256[](1);
-        values[0] = 0;
-
-        bytes[] memory calldatas = new bytes[](1);
-        calldatas[0] = abi.encodeWithSignature("test()");
-
-        // Give some voting power to proposer
-        aggregator.setBalance(based, governor.PROPOSAL_THRESHOLD());
-
-        proposalId = governor.propose(targets, values, calldatas, "test");
-        vm.stopPrank();
-    }
 }

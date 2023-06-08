@@ -108,6 +108,62 @@ contract GovernorOpsTest is BaseFixture {
         assertEq(uint256(state), uint256(IGovernor.ProposalState.Canceled));
     }
 
+    /// @notice Emergency msig can cancel proposals that were already queued
+    function testCancelQueuedProposalEmergencyMsig() public {
+        vm.startPrank(based);
+        address[] memory targets = new address[](1);
+        targets[0] = address(0);
+        uint256[] memory values = new uint256[](1);
+        values[0] = 0;
+
+        bytes[] memory calldatas = new bytes[](1);
+        calldatas[0] = abi.encodeWithSignature("test()");
+
+        // Give some voting power to proposer
+        aggregator.setBalance(based, governor.proposalThreshold());
+        // Calculate proposal hash for timelock controller
+        bytes32 proposalTimelockHash = timelock.hashOperationBatch(
+            targets,
+            values,
+            calldatas,
+            0,
+            keccak256(bytes("test"))
+        );
+        uint256 proposalId = governor.propose(
+            targets,
+            values,
+            calldatas,
+            "test"
+        );
+        vm.stopPrank();
+        vm.warp(block.timestamp + governor.votingDelay() + 1);
+        // Alice votes to reach the quorum
+        aggregator.setBalance(alice, governor.proposalThreshold());
+        vm.prank(alice);
+        governor.castVote(proposalId, 1);
+        // Mine some blocks to pass voting period
+        vm.warp(block.timestamp + governor.votingPeriod() + 1);
+        // Queue proposal
+        vm.prank(based);
+        governor.queue(targets, values, calldatas, keccak256(bytes("test")));
+        // Make sure proposal is in queue now
+        assertEq(
+            uint256(governor.state(proposalId)),
+            uint256(IGovernor.ProposalState.Queued)
+        );
+        // Make sure proposal is in queue in TimelockController as well
+        assertEq(timelock.isOperation(proposalTimelockHash), true);
+        // Now emergency msig will cancel the proposal and make sure it's canceled in TimelockController as well
+        vm.prank(emergencyMsig);
+        governor.cancel(targets, values, calldatas, keccak256(bytes("test")));
+        assertEq(
+            uint256(governor.state(proposalId)),
+            uint256(IGovernor.ProposalState.Canceled)
+        );
+
+        assertEq(timelock.isOperation(proposalTimelockHash), false);
+    }
+
     function testCancelProposalNoRole() public {
         vm.startPrank(based);
         address[] memory targets = new address[](1);

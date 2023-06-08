@@ -37,7 +37,12 @@ contract BaseFixture is Test {
         // Deploy timelock controller:
         address[] memory proposers = new address[](1);
         proposers[0] = based;
-        timelock = new TimelockController(1, proposers, proposers, based);
+        timelock = new TimelockController(
+            1,
+            proposers,
+            proposers,
+            emergencyMsig
+        );
         // Mock aggregator
         aggregator = new MockVoteAggregator();
         // Create governor
@@ -48,9 +53,10 @@ contract BaseFixture is Test {
         );
 
         // Grant proposer and executoooor role to governor
-        vm.startPrank(based);
+        vm.startPrank(emergencyMsig);
         timelock.grantRole(timelock.PROPOSER_ROLE(), address(governor));
         timelock.grantRole(timelock.EXECUTOR_ROLE(), address(governor));
+        timelock.grantRole(timelock.CANCELLER_ROLE(), address(governor));
         vm.stopPrank();
     }
 }

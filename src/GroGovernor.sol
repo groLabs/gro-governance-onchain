@@ -190,7 +190,7 @@ contract GroGovernor is
         uint256[] memory values,
         bytes[] memory calldatas,
         bytes32 descriptionHash
-    ) internal override(Governor, GovernorTimelockControl) returns (uint256) {
+    ) internal override(GovernorTimelockControl, Governor) returns (uint256) {
         return super._cancel(targets, values, calldatas, descriptionHash);
     }
 

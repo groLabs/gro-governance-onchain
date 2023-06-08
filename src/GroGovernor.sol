@@ -18,6 +18,9 @@ contract GroGovernor is
     bytes32 public constant GOVERNOR_ADMIN_ROLE =
         keccak256("GOVERNOR_ADMIN_ROLE");
 
+    bytes32 public constant EMERGENCY_MSIG_ROLE =
+        keccak256("EMERGENCY_MSIG_ROLE");
+
     ///////// Storage /////////
     uint256 public votePeriod = 2 days;
     uint256 public voteDelay = 2 days;
@@ -37,12 +40,15 @@ contract GroGovernor is
 
     constructor(
         address _aggregator,
-        TimelockController _timelock
+        TimelockController _timelock,
+        address _emergencyMsig
     ) Governor("GRO Governor") GovernorTimelockControl(_timelock) {
         aggregator = IAggregator(_aggregator);
         // Allow TimelockController to change parameters
         _setRoleAdmin(GOVERNOR_ADMIN_ROLE, GOVERNOR_ADMIN_ROLE);
-        _setupRole(GOVERNOR_ADMIN_ROLE, address(_timelock));
+        _grantRole(GOVERNOR_ADMIN_ROLE, address(_timelock));
+        // Allow emergency multisig to cancel proposals
+        _grantRole(EMERGENCY_MSIG_ROLE, _emergencyMsig);
     }
 
     /// @notice Returns the delay between when a proposal is created and when voting can start
@@ -154,14 +160,29 @@ contract GroGovernor is
         return super.state(proposalId);
     }
 
+    /// @notice Proposal can be cancelled by proposer or emergency msig
+    /// @param targets The ordered list of target addresses for calls to be made
+    /// @param values The ordered list of values (i.e. msg.value)
+    /// @param calldatas The ordered list of calldata to be passed to each call
+    /// @param descriptionHash The hash of the description of the proposal
     function cancel(
         address[] memory targets,
         uint256[] memory values,
         bytes[] memory calldatas,
         bytes32 descriptionHash
     ) public override(Governor, IGovernor) returns (uint256) {
-        // TODO: Incorporate emergency MSIG ops for cancelling
-        return super.cancel(targets, values, calldatas, descriptionHash);
+        uint256 proposalId = hashProposal(
+            targets,
+            values,
+            calldatas,
+            descriptionHash
+        );
+        require(
+            _msgSender() == proposalProposer(proposalId) ||
+                hasRole(EMERGENCY_MSIG_ROLE, _msgSender()),
+            "GRO::cancel: not proposer or emergency msig"
+        );
+        return _cancel(targets, values, calldatas, descriptionHash);
     }
 
     function _cancel(
@@ -169,7 +190,7 @@ contract GroGovernor is
         uint256[] memory values,
         bytes[] memory calldatas,
         bytes32 descriptionHash
-    ) internal override(Governor, GovernorTimelockControl) returns (uint256) {
+    ) internal override(GovernorTimelockControl, Governor) returns (uint256) {
         return super._cancel(targets, values, calldatas, descriptionHash);
     }
 

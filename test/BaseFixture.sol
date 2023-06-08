@@ -15,6 +15,7 @@ contract BaseFixture is Test {
     address internal alice;
     address internal bob;
     address internal joe;
+    address internal emergencyMsig;
 
     GroGovernor public governor;
     MockVoteAggregator public aggregator;
@@ -22,7 +23,7 @@ contract BaseFixture is Test {
 
     function setUp() public virtual {
         utils = new Utils();
-        users = utils.createUsers(4);
+        users = utils.createUsers(5);
         based = users[0];
         vm.label(based, "BASED ADDRESS");
         alice = users[1];
@@ -31,6 +32,8 @@ contract BaseFixture is Test {
         vm.label(bob, "Bob");
         joe = users[3];
         vm.label(joe, "Joe");
+        emergencyMsig = users[4];
+        vm.label(emergencyMsig, "Emergency MSIG");
         // Deploy timelock controller:
         address[] memory proposers = new address[](1);
         proposers[0] = based;
@@ -38,7 +41,11 @@ contract BaseFixture is Test {
         // Mock aggregator
         aggregator = new MockVoteAggregator();
         // Create governor
-        governor = new GroGovernor(address(aggregator), timelock);
+        governor = new GroGovernor(
+            address(aggregator),
+            timelock,
+            emergencyMsig
+        );
 
         // Grant proposer and executoooor role to governor
         vm.startPrank(based);

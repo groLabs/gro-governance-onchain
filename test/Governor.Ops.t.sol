@@ -75,6 +75,61 @@ contract GovernorOpsTest is BaseFixture {
         assertEq(uint256(state), uint256(IGovernor.ProposalState.Canceled));
     }
 
+    /// @notice Emergency msig can cancel proposals in Active state
+    function testCancelProposalEmergencyMsig() public {
+        vm.startPrank(based);
+        address[] memory targets = new address[](1);
+        targets[0] = address(0);
+        uint256[] memory values = new uint256[](1);
+        values[0] = 0;
+
+        bytes[] memory calldatas = new bytes[](1);
+        calldatas[0] = abi.encodeWithSignature("test()");
+
+        // Give some voting power to proposer
+        aggregator.setBalance(based, governor.proposalThreshold());
+
+        uint256 proposalId = governor.propose(
+            targets,
+            values,
+            calldatas,
+            "test"
+        );
+        vm.stopPrank();
+        vm.warp(block.timestamp + governor.votingDelay() + 1);
+        // Check proposal state and make sure emergency msig can cancel while proposal being active
+        IGovernor.ProposalState state = governor.state(proposalId);
+        assertEq(uint256(state), uint256(IGovernor.ProposalState.Active));
+        // Try cancel now
+        vm.prank(emergencyMsig);
+        governor.cancel(targets, values, calldatas, keccak256(bytes("test")));
+        // Check proposal again and make sure it was canceled
+        state = governor.state(proposalId);
+        assertEq(uint256(state), uint256(IGovernor.ProposalState.Canceled));
+    }
+
+    function testCancelProposalNoRole() public {
+        vm.startPrank(based);
+        address[] memory targets = new address[](1);
+        targets[0] = address(0);
+        uint256[] memory values = new uint256[](1);
+        values[0] = 0;
+
+        bytes[] memory calldatas = new bytes[](1);
+        calldatas[0] = abi.encodeWithSignature("test()");
+
+        // Give some voting power to proposer
+        aggregator.setBalance(based, governor.proposalThreshold());
+
+        governor.propose(targets, values, calldatas, "test");
+        vm.stopPrank();
+        vm.warp(block.timestamp + governor.votingDelay() + 1);
+        // Alice has no rights to cancel as she didn't create the proposal nor is she emergency msig
+        vm.prank(alice);
+        vm.expectRevert("GRO::cancel: not proposer or emergency msig");
+        governor.cancel(targets, values, calldatas, keccak256(bytes("test")));
+    }
+
     /// @notice Testing revert when proposer creating proposal without enough voting power
     function testCreateProposalBelowThreshold() public {
         vm.startPrank(based);

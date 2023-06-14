@@ -8,6 +8,7 @@ import "../src/Mocks/MockVoteAggregator.sol";
 import "../lib/openzeppelin-contracts/contracts/governance/TimelockController.sol";
 
 contract BaseFixture is Test {
+    using stdStorage for StdStorage;
     Utils internal utils;
 
     address payable[] internal users;
@@ -20,6 +21,20 @@ contract BaseFixture is Test {
     GroGovernor public governor;
     MockVoteAggregator public aggregator;
     TimelockController public timelock;
+
+    function setStorage(
+        address _user,
+        bytes4 _selector,
+        address _contract,
+        uint256 value
+    ) public {
+        uint256 slot = stdstore
+            .target(_contract)
+            .sig(_selector)
+            .with_key(_user)
+            .find();
+        vm.store(_contract, bytes32(slot), bytes32(value));
+    }
 
     function setUp() public virtual {
         utils = new Utils();

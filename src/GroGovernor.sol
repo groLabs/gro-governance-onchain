@@ -139,6 +139,11 @@ contract GroGovernor is
         return super.supportsInterface(interfaceId);
     }
 
+    /// @notice Get the voting power of an account
+    function getVp(address account) public view returns (uint256) {
+        return aggregator.balanceOf(account);
+    }
+
     /// @notice Get the votes an account has for a proposal
     /// @param account The address to get votes for
     function _getVotes(

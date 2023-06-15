@@ -116,4 +116,167 @@ contract GovernorInternalSettingTest is BaseFixture {
         // Make sure voting delay is 3 days now
         assertEq(governor.votingDelay(), 3 days);
     }
+
+    function testVoteForSettingVotingPeriod() public {
+        assertEq(governor.votingPeriod(), 5 days);
+        vm.startPrank(based);
+        address[] memory targets = new address[](1);
+        targets[0] = address(governor);
+        uint256[] memory values = new uint256[](1);
+        values[0] = 0;
+
+        bytes[] memory calldatas = new bytes[](1);
+        calldatas[0] = abi.encodeWithSignature(
+            "setVotingPeriod(uint256)",
+            10 days
+        );
+
+        // Give some voting power to proposer
+        aggregator.setBalance(based, governor.proposalThreshold());
+
+        uint256 proposalId = governor.propose(
+            targets,
+            values,
+            calldatas,
+            "Changing voting period"
+        );
+        vm.stopPrank();
+        vm.warp(block.timestamp + governor.votingDelay() + 1);
+        // Give some voting power to voter
+        aggregator.setBalance(alice, governor.proposalThreshold());
+        vm.prank(alice);
+        // Vote
+        governor.castVote(proposalId, 1);
+        // Queue:
+        vm.warp(block.timestamp + governor.votingPeriod() + 1);
+        governor.queue(
+            targets,
+            values,
+            calldatas,
+            keccak256(bytes("Changing voting period"))
+        );
+        vm.warp(block.timestamp + 100);
+        // Execute now
+        vm.prank(based);
+        governor.execute(
+            targets,
+            values,
+            calldatas,
+            keccak256(bytes("Changing voting period"))
+        );
+        // Make sure proposal is executed now
+        assertEq(
+            uint256(governor.state(proposalId)),
+            uint256(IGovernor.ProposalState.Executed)
+        );
+        // Make sure voting delay is 10 days now
+        assertEq(governor.votingPeriod(), 10 days);
+    }
+
+    function testVoteForChangingQuorum() public {
+        assertEq(governor.quorumVotes(), 1000);
+        vm.startPrank(based);
+        address[] memory targets = new address[](1);
+        targets[0] = address(governor);
+        uint256[] memory values = new uint256[](1);
+        values[0] = 0;
+
+        bytes[] memory calldatas = new bytes[](1);
+        calldatas[0] = abi.encodeWithSignature("setQuorum(uint256)", 20000);
+
+        // Give some voting power to proposer
+        aggregator.setBalance(based, governor.proposalThreshold());
+
+        uint256 proposalId = governor.propose(
+            targets,
+            values,
+            calldatas,
+            "Changing quorum"
+        );
+        vm.stopPrank();
+        vm.warp(block.timestamp + governor.votingDelay() + 1);
+        // Give some voting power to voter
+        aggregator.setBalance(alice, governor.proposalThreshold());
+        vm.prank(alice);
+        // Vote
+        governor.castVote(proposalId, 1);
+        // Queue:
+        vm.warp(block.timestamp + governor.votingPeriod() + 1);
+        governor.queue(
+            targets,
+            values,
+            calldatas,
+            keccak256(bytes("Changing quorum"))
+        );
+        vm.warp(block.timestamp + 100);
+        // Execute now
+        vm.prank(based);
+        governor.execute(
+            targets,
+            values,
+            calldatas,
+            keccak256(bytes("Changing quorum"))
+        );
+        // Make sure proposal is executed now
+        assertEq(
+            uint256(governor.state(proposalId)),
+            uint256(IGovernor.ProposalState.Executed)
+        );
+        assertEq(governor.quorumVotes(), 20000);
+    }
+
+    function testVoteForChangingProposalThreshold() public {
+        assertEq(governor.proposalThreshold(), 1000e18);
+        vm.startPrank(based);
+        address[] memory targets = new address[](1);
+        targets[0] = address(governor);
+        uint256[] memory values = new uint256[](1);
+        values[0] = 0;
+
+        bytes[] memory calldatas = new bytes[](1);
+        calldatas[0] = abi.encodeWithSignature(
+            "setProposalThreshold(uint256)",
+            20000e18
+        );
+
+        // Give some voting power to proposer
+        aggregator.setBalance(based, governor.proposalThreshold());
+
+        uint256 proposalId = governor.propose(
+            targets,
+            values,
+            calldatas,
+            "Changing threshold"
+        );
+        vm.stopPrank();
+        vm.warp(block.timestamp + governor.votingDelay() + 1);
+        // Give some voting power to voter
+        aggregator.setBalance(alice, governor.proposalThreshold());
+        vm.prank(alice);
+        // Vote
+        governor.castVote(proposalId, 1);
+        // Queue:
+        vm.warp(block.timestamp + governor.votingPeriod() + 1);
+        governor.queue(
+            targets,
+            values,
+            calldatas,
+            keccak256(bytes("Changing threshold"))
+        );
+        vm.warp(block.timestamp + 100);
+        // Execute now
+        vm.prank(based);
+        governor.execute(
+            targets,
+            values,
+            calldatas,
+            keccak256(bytes("Changing threshold"))
+        );
+        // Make sure proposal is executed now
+        assertEq(
+            uint256(governor.state(proposalId)),
+            uint256(IGovernor.ProposalState.Executed)
+        );
+        assertEq(governor.proposalThreshold(), 20000e18);
+    }
 }

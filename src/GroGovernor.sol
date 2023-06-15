@@ -22,7 +22,7 @@ contract GroGovernor is
         keccak256("EMERGENCY_MSIG_ROLE");
 
     ///////// Storage /////////
-    uint256 public votePeriod = 2 days;
+    uint256 public votePeriod = 5 days;
     uint256 public voteDelay = 2 days;
     uint256 public threshold = 1000e18;
     IAggregator public aggregator;
@@ -137,6 +137,11 @@ contract GroGovernor is
         returns (bool)
     {
         return super.supportsInterface(interfaceId);
+    }
+
+    /// @notice Get the voting power of an account
+    function getVp(address account) public view returns (uint256) {
+        return aggregator.balanceOf(account);
     }
 
     /// @notice Get the votes an account has for a proposal

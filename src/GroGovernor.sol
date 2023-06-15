@@ -22,7 +22,7 @@ contract GroGovernor is
         keccak256("EMERGENCY_MSIG_ROLE");
 
     ///////// Storage /////////
-    uint256 public votePeriod = 2 days;
+    uint256 public votePeriod = 5 days;
     uint256 public voteDelay = 2 days;
     uint256 public threshold = 1000e18;
     IAggregator public aggregator;

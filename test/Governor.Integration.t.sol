@@ -206,6 +206,8 @@ contract GovernorIntegrationTest is BaseFixture {
         assertEq(gTranche.utilisationThreshold(), initialExpectedThreshold);
     }
 
+    // @dev Test case making sure that vesting voting power decays over time
+    // @dev and proposer can't open proposal if he doesn't have enough voting power
     function testVestingVpDecayingOverTime() public {
         uint256 newThreshold = 20000;
         vm.startPrank(based);
@@ -242,6 +244,48 @@ contract GovernorIntegrationTest is BaseFixture {
             "Changing utilisation threshold"
         );
         vm.stopPrank();
+    }
+
+    function testVestingVpDecayingOverTimeForVoter() public {
+        uint256 newThreshold = 20000;
+        vm.startPrank(based);
+        address[] memory targets = new address[](1);
+        targets[0] = address(gTranche);
+        uint256[] memory values = new uint256[](1);
+        values[0] = 0;
+
+        bytes[] memory calldatas = new bytes[](1);
+        // Make calldata invalid
+        calldatas[0] = abi.encodeWithSignature(
+            "setUtilisation(uint256)",
+            newThreshold
+        );
+        vm.stopPrank();
+        // Give some voting power to proposer
+        giveGroToAndVest(based, integrationGovernor.proposalThreshold());
+        vm.prank(based);
+        uint256 proposalId = integrationGovernor.propose(
+            targets,
+            values,
+            calldatas,
+            "Changing utilisation threshold"
+        );
+        // Give some vp to alice right now right when proposal is opened
+        giveGroToAndVest(alice, integrationGovernor.proposalThreshold());
+        // Fast forward to the end of voting period
+        vm.warp(block.timestamp + integrationGovernor.votingDelay() + 1);
+        vm.warp(block.timestamp + integrationGovernor.votingPeriod() - 1);
+        vm.prank(alice);
+        // Vote
+        integrationGovernor.castVote(proposalId, 1);
+        // Proposal should fail because voter vp should decay to the value below proposalVotingThreshold
+        vm.expectRevert("Governor: proposal not successful");
+        integrationGovernor.queue(
+            targets,
+            values,
+            calldatas,
+            keccak256(bytes("Changing utilisation threshold"))
+        );
     }
 
     ////////////////////////////////////////////

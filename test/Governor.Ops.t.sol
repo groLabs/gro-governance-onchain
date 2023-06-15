@@ -9,6 +9,10 @@ contract GovernorOpsTest is BaseFixture {
         super.setUp();
     }
 
+    function testClockMode() public {
+        assertEq(governor.CLOCK_MODE(), "mode=timestamp");
+    }
+
     //////////////////////////////////////////////////
     //         Test create/cancel operations        //
     //////////////////////////////////////////////////
